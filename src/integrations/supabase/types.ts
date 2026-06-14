@@ -268,6 +268,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_household: {
+        Args: { _avatar_color: string; _display_name: string; _name: string }
+        Returns: string
+      }
       is_household_admin: {
         Args: { _household_id: string; _user_id: string }
         Returns: boolean
