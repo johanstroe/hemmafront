@@ -15,7 +15,7 @@ type ListItem = {
   completed_by: string | null;
   created_by: string;
   created_at: string;
-  parent_id: string | null;
+  parent_id?: string | null;
 };
 
 const TABS: { type: ListType; label: string }[] = [
@@ -92,9 +92,8 @@ export function ListsPanel({ householdId, userId, members }: { householdId: stri
       list_id: activeList.id,
       content,
       created_by: userId,
-      parent_id: null,
     });
-    if (error) toast.error("Kunde inte lägga till");
+    if (error) toast.error("Kunde inte lägga till", { description: error.message });
   };
 
   const addSubItem = async (parentId: string, content: string) => {
@@ -105,7 +104,7 @@ export function ListsPanel({ householdId, userId, members }: { householdId: stri
       created_by: userId,
       parent_id: parentId,
     });
-    if (error) toast.error("Kunde inte lägga till deluppgift");
+    if (error) toast.error("Kunde inte lägga till deluppgift", { description: error.message });
     else setExpandedTopics((prev) => new Set(prev).add(parentId));
   };
 
