@@ -5,7 +5,6 @@ import { useAuth } from "./useAuth";
 export type Household = {
   id: string;
   name: string;
-  invite_code: string;
   created_by: string;
 };
 
@@ -47,7 +46,7 @@ export function useHousehold() {
     }
 
     const [householdRes, membersRes] = await Promise.all([
-      supabase.from("households").select("*").eq("id", myMembership.household_id).single(),
+      supabase.from("households").select("id,name,created_by").eq("id", myMembership.household_id).single(),
       supabase.from("household_members").select("*").eq("household_id", myMembership.household_id),
     ]);
 

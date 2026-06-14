@@ -48,25 +48,13 @@ export function Onboarding({ onCreated }: { onCreated: () => void | Promise<void
   const joinHousehold = async () => {
     if (!user || !inviteCode.trim() || !displayName.trim()) return;
     setSubmitting(true);
-    const { data: hh, error } = await supabase
-      .from("households")
-      .select("id")
-      .eq("invite_code", inviteCode.trim().toUpperCase())
-      .maybeSingle();
-    if (error || !hh) {
-      toast.error("Inbjudningskoden hittades inte");
-      setSubmitting(false);
-      return;
-    }
-    const { error: memberErr } = await supabase.from("household_members").insert({
-      household_id: hh.id,
-      user_id: user.id,
-      display_name: displayName.trim(),
-      avatar_color: MEMBER_COLORS[colorIdx],
-      role: "member",
+    const { error: rpcErr } = await supabase.rpc("join_household_with_invite", {
+      _invite_code: inviteCode.trim().toUpperCase(),
+      _display_name: displayName.trim(),
+      _avatar_color: MEMBER_COLORS[colorIdx],
     });
-    if (memberErr) {
-      toast.error("Kunde inte gå med", { description: memberErr.message });
+    if (rpcErr) {
+      toast.error("Kunde inte gå med", { description: rpcErr.message });
       setSubmitting(false);
       return;
     }
