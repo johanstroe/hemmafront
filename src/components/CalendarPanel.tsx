@@ -6,8 +6,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Link2, Link2Off } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { getGoogleAuthUrl, getGoogleStatus, syncGoogleCalendar, disconnectGoogle } from "@/lib/google-calendar.functions";
 
 type Event = {
   id: string;
@@ -26,6 +28,13 @@ const SV_MONTHS = ["januari", "februari", "mars", "april", "maj", "juni", "juli"
 export function CalendarPanel({ householdId, members, userId }: { householdId: string; members: Member[]; userId: string }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [creating, setCreating] = useState(false);
+  const [gConnected, setGConnected] = useState<boolean | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  const getAuthUrl = useServerFn(getGoogleAuthUrl);
+  const getStatus = useServerFn(getGoogleStatus);
+  const runSync = useServerFn(syncGoogleCalendar);
+  const disconnect = useServerFn(disconnectGoogle);
 
   const fetchEvents = async () => {
     const start = new Date();
@@ -42,8 +51,64 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
     setEvents((data as Event[]) ?? []);
   };
 
+  const doSync = async (silent = false) => {
+    setSyncing(true);
+    try {
+      const res = await runSync({ data: { householdId } });
+      if (!res.connected) {
+        setGConnected(false);
+        return;
+      }
+      setGConnected(true);
+      if (!silent) {
+        toast.success(`Synkad: ${res.pulled} hämtade, ${res.pushed} skickade`);
+      }
+      fetchEvents();
+    } catch (e) {
+      if (!silent) toast.error("Synk misslyckades", { description: (e as Error).message });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const connectGoogle = async () => {
+    try {
+      const { url } = await getAuthUrl();
+      window.location.href = url;
+    } catch (e) {
+      toast.error("Kunde inte starta Google-anslutning", { description: (e as Error).message });
+    }
+  };
+
+  const disconnectG = async () => {
+    await disconnect();
+    setGConnected(false);
+    toast.success("Google-kalender frånkopplad");
+  };
+
   useEffect(() => {
     fetchEvents();
+    // Check Google status, then auto-sync on each page load
+    getStatus().then((s) => {
+      setGConnected(s.connected);
+      if (s.connected) doSync(true);
+    }).catch(() => setGConnected(false));
+
+    // Show toast for callback redirect
+    const url = new URL(window.location.href);
+    const g = url.searchParams.get("google");
+    if (g === "connected") {
+      toast.success("Google-kalender ansluten");
+      url.searchParams.delete("google");
+      window.history.replaceState({}, "", url.toString());
+    } else if (g === "error") {
+      const reason = url.searchParams.get("reason") ?? "okänt fel";
+      toast.error("Google-anslutning misslyckades", { description: reason });
+      url.searchParams.delete("google");
+      url.searchParams.delete("reason");
+      window.history.replaceState({}, "", url.toString());
+    }
+
     const channel = supabase
       .channel(`events-${householdId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "events", filter: `household_id=eq.${householdId}` }, fetchEvents)
@@ -80,9 +145,25 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
           <h2 className="font-display text-2xl font-semibold">Kalender</h2>
           <p className="text-xs text-muted-foreground">Kommande 7 dagar</p>
         </div>
-        <Button onClick={() => setCreating(true)} size="sm" className="rounded-full gap-1.5">
-          <Plus className="size-4" /> Ny
-        </Button>
+        <div className="flex items-center gap-2">
+          {gConnected === true ? (
+            <>
+              <Button onClick={() => doSync(false)} disabled={syncing} size="sm" variant="ghost" className="rounded-full gap-1.5" title="Synka Google">
+                <RefreshCw className={`size-4 ${syncing ? "animate-spin" : ""}`} />
+              </Button>
+              <Button onClick={disconnectG} size="sm" variant="ghost" className="rounded-full gap-1.5" title="Koppla från Google">
+                <Link2Off className="size-4" />
+              </Button>
+            </>
+          ) : gConnected === false ? (
+            <Button onClick={connectGoogle} size="sm" variant="outline" className="rounded-full gap-1.5">
+              <Link2 className="size-4" /> Google
+            </Button>
+          ) : null}
+          <Button onClick={() => setCreating(true)} size="sm" className="rounded-full gap-1.5">
+            <Plus className="size-4" /> Ny
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-3">
