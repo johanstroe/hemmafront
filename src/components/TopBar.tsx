@@ -75,7 +75,7 @@ export function TopBar({
               <h1 className="font-display text-base sm:text-lg font-semibold truncate leading-tight">{household.name}</h1>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <div className="hidden sm:flex -space-x-2">
               {members.slice(0, 5).map((m) => (
                 <div
@@ -88,20 +88,25 @@ export function TopBar({
                 </div>
               ))}
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full size-9 p-0 relative shrink-0"
+              onClick={() => setNotifOpen(true)}
+              aria-label="Notiser"
+            >
+              <Bell className="size-[18px] sm:size-5" />
+              {notifEnabled && (
+                <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-primary ring-2 ring-background" />
+              )}
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="rounded-full size-9 p-0 relative">
+                <Button variant="ghost" size="sm" className="rounded-full size-9 p-0 shrink-0" aria-label="Meny">
                   ⋯
-                  {notifEnabled && (
-                    <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-primary ring-2 ring-background" />
-                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem onClick={() => setNotifOpen(true)}>
-                  <Bell className="size-4 mr-2" /> Notiser
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onInvite}>
                   <UserPlus className="size-4 mr-2" /> Bjud in medlem
                 </DropdownMenuItem>
