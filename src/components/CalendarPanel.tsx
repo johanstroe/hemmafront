@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Member } from "@/hooks/useHousehold";
+import { useHorizontalSwipe } from "@/hooks/use-swipe";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,7 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
   const [syncing, setSyncing] = useState(false);
   const [view, setView] = useState<"week" | "month">("week");
   const [monthOffset, setMonthOffset] = useState(0);
+  const [weekOffset, setWeekOffset] = useState(0);
 
   const getAuthUrl = useServerFn(getGoogleAuthUrl);
   const getStatus = useServerFn(getGoogleStatus);
@@ -44,6 +46,7 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
     if (view === "week") {
       const start = new Date();
       start.setHours(0, 0, 0, 0);
+      start.setDate(start.getDate() + weekOffset * 7);
       const end = new Date(start);
       end.setDate(end.getDate() + 7);
       return { start, end };
@@ -53,7 +56,7 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
     start.setHours(0, 0, 0, 0);
     const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
     return { start, end };
-  }, [view, monthOffset]);
+  }, [view, monthOffset, weekOffset]);
 
   const fetchEvents = async () => {
     const { start, end } = visibleRange;
@@ -131,7 +134,7 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [householdId, view, monthOffset]);
+  }, [householdId, view, monthOffset, weekOffset]);
 
   const openCreate = (date?: string) => {
     setCreateDate(date);
@@ -144,6 +147,28 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
     return `${SV_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
   }, [monthOffset]);
 
+  const weekTitle = useMemo(() => {
+    const { start, end } = visibleRange;
+    const lastDay = new Date(end);
+    lastDay.setDate(lastDay.getDate() - 1);
+    if (weekOffset === 0) return "Denna vecka";
+    const dayMonth = (d: Date) => `${d.getDate()} ${SV_MONTHS[d.getMonth()]}`;
+    if (start.getMonth() === lastDay.getMonth() && start.getFullYear() === lastDay.getFullYear()) {
+      return `${start.getDate()}–${lastDay.getDate()} ${SV_MONTHS[start.getMonth()]}`;
+    }
+    return `${dayMonth(start)} – ${dayMonth(lastDay)}`;
+  }, [visibleRange, weekOffset]);
+
+  const weekSwipe = useHorizontalSwipe(
+    () => setWeekOffset((o) => o + 1),
+    () => setWeekOffset((o) => o - 1),
+  );
+
+  const monthSwipe = useHorizontalSwipe(
+    () => setMonthOffset((o) => o + 1),
+    () => setMonthOffset((o) => o - 1),
+  );
+
   const deleteEvent = async (id: string) => {
     const { error } = await supabase.from("events").delete().eq("id", id);
     if (error) toast.error("Kunde inte ta bort");
@@ -155,10 +180,23 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
         <div className="min-w-0">
           <h2 className="font-display text-xl sm:text-2xl font-semibold">Kalender</h2>
           <p className="text-xs text-muted-foreground truncate">
-            {view === "week" ? "Kommande 7 dagar" : monthTitle}
+            {view === "week" ? weekTitle : monthTitle}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          {view === "week" && (
+            <div className="flex items-center gap-0.5 sm:gap-1">
+              <Button onClick={() => setWeekOffset((o) => o - 1)} size="sm" variant="ghost" className="rounded-full size-8 p-0">
+                <ChevronLeft className="size-4" />
+              </Button>
+              <Button onClick={() => setWeekOffset(0)} size="sm" variant="ghost" className="rounded-full text-xs px-2">
+                Idag
+              </Button>
+              <Button onClick={() => setWeekOffset((o) => o + 1)} size="sm" variant="ghost" className="rounded-full size-8 p-0">
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          )}
           {view === "month" && (
             <div className="flex items-center gap-0.5 sm:gap-1">
               <Button onClick={() => setMonthOffset((o) => o - 1)} size="sm" variant="ghost" className="rounded-full size-8 p-0">
@@ -207,9 +245,13 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
       </div>
 
       {view === "week" ? (
-        <WeekView events={events} members={members} userId={userId} onDelete={deleteEvent} onDayClick={openCreate} />
+        <div className="touch-pan-y sm:touch-auto" {...weekSwipe}>
+          <WeekView weekStart={visibleRange.start} events={events} members={members} userId={userId} onDelete={deleteEvent} onDayClick={openCreate} />
+        </div>
       ) : (
-        <MonthView events={events} members={members} userId={userId} onDelete={deleteEvent} monthOffset={monthOffset} onDayClick={openCreate} />
+        <div className="touch-pan-y sm:touch-auto" {...monthSwipe}>
+          <MonthView events={events} members={members} userId={userId} onDelete={deleteEvent} monthOffset={monthOffset} onDayClick={openCreate} />
+        </div>
       )}
 
       <CreateEventDialog
@@ -225,7 +267,8 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
   );
 }
 
-function WeekView({ events, members, userId, onDelete, onDayClick }: {
+function WeekView({ weekStart, events, members, userId, onDelete, onDayClick }: {
+  weekStart: Date;
   events: Event[];
   members: Member[];
   userId: string;
@@ -236,7 +279,7 @@ function WeekView({ events, members, userId, onDelete, onDayClick }: {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   for (let i = 0; i < 7; i++) {
-    const d = new Date(today);
+    const d = new Date(weekStart);
     d.setDate(d.getDate() + i);
     const dayEvents = events.filter((e) => sameDay(new Date(e.start_time), d));
     days.push({ date: d, events: dayEvents });
