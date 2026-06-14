@@ -25,31 +25,17 @@ export function Onboarding() {
   const createHousehold = async () => {
     if (!user || !householdName.trim() || !displayName.trim()) return;
     setSubmitting(true);
-    const { data: hh, error } = await supabase
-      .from("households")
-      .insert({ name: householdName.trim(), created_by: user.id })
-      .select()
-      .single();
-    if (error || !hh) {
+    const { data: hhId, error } = await supabase.rpc("create_household", {
+      _name: householdName.trim(),
+      _display_name: displayName.trim(),
+      _avatar_color: MEMBER_COLORS[colorIdx],
+    });
+    if (error || !hhId) {
       toast.error("Kunde inte skapa hushåll", { description: error?.message });
       setSubmitting(false);
       return;
     }
-    const { error: memberErr } = await supabase.from("household_members").upsert(
-      {
-        household_id: hh.id,
-        user_id: user.id,
-        display_name: displayName.trim(),
-        avatar_color: MEMBER_COLORS[colorIdx],
-        role: "admin",
-      },
-      { onConflict: "household_id,user_id" },
-    );
-    if (memberErr) {
-      toast.error("Kunde inte lägga till dig", { description: memberErr.message });
-      setSubmitting(false);
-      return;
-    }
+    const hh = { id: hhId as string };
     // Create default lists
     await supabase.from("lists").insert([
       { household_id: hh.id, name: "Inköp", type: "shopping", sort_order: 0 },
