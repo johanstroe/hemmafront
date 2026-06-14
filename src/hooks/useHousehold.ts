@@ -63,8 +63,9 @@ export function useHousehold() {
 
   useEffect(() => {
     if (!household) return;
+    const topic = `household-${household.id}-members-${Math.random().toString(36).slice(2)}`;
     const channel = supabase
-      .channel(`household-${household.id}-members`)
+      .channel(topic)
       .on("postgres_changes", { event: "*", schema: "public", table: "household_members", filter: `household_id=eq.${household.id}` }, () => {
         fetchHousehold();
       })
