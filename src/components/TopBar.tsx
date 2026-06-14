@@ -18,8 +18,10 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { UserPlus, LogOut, Pencil } from "lucide-react";
+import { UserPlus, LogOut, Pencil, Bell } from "lucide-react";
 import { toast } from "sonner";
+import { NotificationSettings } from "./NotificationSettings";
+import { getNotificationPrefs } from "@/lib/notifications";
 
 export function TopBar({
   household,
@@ -36,6 +38,8 @@ export function TopBar({
 }) {
   const isAdmin = members.some((m) => m.user_id === userId && m.role === "admin");
   const [renameOpen, setRenameOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifEnabled, setNotifEnabled] = useState(() => getNotificationPrefs().enabled);
   const [newName, setNewName] = useState(household.name);
   const [renaming, setRenaming] = useState(false);
 
@@ -86,9 +90,18 @@ export function TopBar({
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="rounded-full size-9 p-0">⋯</Button>
+                <Button variant="ghost" size="sm" className="rounded-full size-9 p-0 relative">
+                  ⋯
+                  {notifEnabled && (
+                    <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-primary ring-2 ring-background" />
+                  )}
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onClick={() => setNotifOpen(true)}>
+                  <Bell className="size-4 mr-2" /> Notiser
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onInvite}>
                   <UserPlus className="size-4 mr-2" /> Bjud in medlem
                 </DropdownMenuItem>
@@ -131,6 +144,14 @@ export function TopBar({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <NotificationSettings
+        open={notifOpen}
+        onClose={() => {
+          setNotifOpen(false);
+          setNotifEnabled(getNotificationPrefs().enabled);
+        }}
+      />
     </>
   );
 }

@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { useHousehold } from "@/hooks/useHousehold";
+import { useAuth } from "@/hooks/useAuth";import { useHousehold } from "@/hooks/useHousehold";
+import { useHouseholdNotifications } from "@/hooks/useHouseholdNotifications";
 import { TopBar } from "./TopBar";
 import { CalendarPanel } from "./CalendarPanel";
 import { ListsPanel } from "./ListsPanel";
@@ -11,6 +10,8 @@ export function Dashboard() {
   const { user } = useAuth();
   const { household, members, refresh } = useHousehold();
   const [showInvite, setShowInvite] = useState(false);
+
+  useHouseholdNotifications(household?.id ?? "", user?.id ?? "", members);
 
   if (!user || !household) return null;
 
