@@ -420,19 +420,20 @@ function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
-function CreateEventDialog({ open, onClose, householdId, members, userId, onCreated }: {
+function CreateEventDialog({ open, onClose, householdId, members, userId, onCreated, defaultDate }: {
   open: boolean;
   onClose: () => void;
   householdId: string;
   members: Member[];
   userId: string;
   onCreated: () => void;
+  defaultDate?: string;
 }) {
   const myMember = members.find((m) => m.user_id === userId);
   const [title, setTitle] = useState("");
   const today = new Date();
-  const defaultDate = today.toISOString().slice(0, 10);
-  const [date, setDate] = useState(defaultDate);
+  const fallbackDate = today.toISOString().slice(0, 10);
+  const [date, setDate] = useState(defaultDate ?? fallbackDate);
   const [time, setTime] = useState("18:00");
   const [allDay, setAllDay] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>(myMember ? [myMember.id] : []);
