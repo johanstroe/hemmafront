@@ -15,14 +15,14 @@ export function Dashboard() {
   if (!user || !household) return null;
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-dvh bg-background overflow-x-hidden">
       <TopBar household={household} members={members} userId={user.id} onInvite={() => setShowInvite(true)} onRenamed={refresh} />
-      <div className="mx-auto max-w-6xl px-4 lg:px-8 py-6 lg:py-10">
-        <div className="grid lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-          <section className="lg:col-span-7">
+      <div className="mx-auto max-w-6xl px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-10">
+        <div className="grid lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 items-start">
+          <section className="lg:col-span-7 min-w-0">
             <CalendarPanel householdId={household.id} members={members} userId={user.id} />
           </section>
-          <section className="lg:col-span-5">
+          <section className="lg:col-span-5 min-w-0">
             <ListsPanel householdId={household.id} userId={user.id} members={members} />
           </section>
         </div>

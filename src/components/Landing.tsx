@@ -22,9 +22,9 @@ export function Landing() {
   };
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto max-w-5xl px-6 py-12 lg:py-24">
-        <header className="flex items-center justify-between mb-16">
+    <main className="min-h-dvh bg-background text-foreground overflow-x-hidden pt-[env(safe-area-inset-top)]">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8 sm:py-12 lg:py-24">
+        <header className="flex items-center justify-between mb-10 sm:mb-16">
           <div className="flex items-center gap-3">
             <div className="size-9 rounded-xl bg-primary grid place-items-center text-primary-foreground font-display text-lg font-semibold">H</div>
             <span className="font-display text-xl font-semibold">Hemmafront</span>
@@ -34,7 +34,7 @@ export function Landing() {
         <section className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <p className="text-xs uppercase tracking-[0.18em] font-semibold text-primary">För hushållet</p>
-            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-semibold leading-[1.05] text-balance">
+            <h1 className="font-display text-3xl sm:text-4xl lg:text-6xl font-semibold leading-[1.05] text-balance">
               Hela familjens vardag, på ett ställe.
             </h1>
             <p className="text-lg text-muted-foreground max-w-[48ch] text-pretty">

@@ -62,17 +62,17 @@ export function TopBar({
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-background/85 backdrop-blur-md border-b border-border">
-        <div className="mx-auto max-w-6xl px-4 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="size-9 rounded-xl bg-primary grid place-items-center text-primary-foreground font-display font-semibold shrink-0">H</div>
+      <header className="sticky top-0 z-40 bg-background/85 backdrop-blur-md border-b border-border pt-[env(safe-area-inset-top)]">
+        <div className="mx-auto max-w-6xl px-3 sm:px-4 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <div className="size-8 sm:size-9 rounded-xl bg-primary grid place-items-center text-primary-foreground font-display font-semibold shrink-0 text-sm sm:text-base">H</div>
             <div className="min-w-0">
               <p className="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground leading-none">Hushåll</p>
-              <h1 className="font-display text-lg font-semibold truncate leading-tight">{household.name}</h1>
+              <h1 className="font-display text-base sm:text-lg font-semibold truncate leading-tight">{household.name}</h1>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex -space-x-2">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <div className="hidden sm:flex -space-x-2">
               {members.slice(0, 5).map((m) => (
                 <div
                   key={m.id}
@@ -108,7 +108,7 @@ export function TopBar({
       </header>
 
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md w-[calc(100%-1.5rem)] max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Byt namn på hushållet</DialogTitle>
             <DialogDescription>Ange ett nytt namn för ditt hushåll.</DialogDescription>

@@ -31,7 +31,7 @@ export function InviteSheet({ open, onClose, household }: { open: boolean; onClo
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="bottom" className="rounded-t-3xl">
+      <SheetContent side="bottom" className="rounded-t-3xl pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <SheetHeader>
           <SheetTitle className="font-display text-2xl">Bjud in till hushållet</SheetTitle>
           <SheetDescription>Dela koden så kan andra gå med i {household.name}.</SheetDescription>

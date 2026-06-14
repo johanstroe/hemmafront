@@ -150,17 +150,17 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="font-display text-2xl font-semibold">Kalender</h2>
-          <p className="text-xs text-muted-foreground">
+    <div className="min-w-0">
+      <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="font-display text-xl sm:text-2xl font-semibold">Kalender</h2>
+          <p className="text-xs text-muted-foreground truncate">
             {view === "week" ? "Kommande 7 dagar" : monthTitle}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           {view === "month" && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5 sm:gap-1">
               <Button onClick={() => setMonthOffset((o) => o - 1)} size="sm" variant="ghost" className="rounded-full size-8 p-0">
                 <ChevronLeft className="size-4" />
               </Button>
@@ -175,33 +175,33 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
           <div className="flex items-center bg-muted rounded-full p-0.5">
             <button
               onClick={() => setView("week")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${view === "week" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-full text-xs font-medium transition-all ${view === "week" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
-              <CalendarDays className="size-3.5" /> Vecka
+              <CalendarDays className="size-3.5" /> <span className="hidden sm:inline">Vecka</span>
             </button>
             <button
               onClick={() => setView("month")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${view === "month" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-full text-xs font-medium transition-all ${view === "month" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
-              <CalendarIcon className="size-3.5" /> Månad
+              <CalendarIcon className="size-3.5" /> <span className="hidden sm:inline">Månad</span>
             </button>
           </div>
           {gConnected === true ? (
             <>
-              <Button onClick={() => doSync(false)} disabled={syncing} size="sm" variant="ghost" className="rounded-full gap-1.5" title="Synka Google">
+              <Button onClick={() => doSync(false)} disabled={syncing} size="sm" variant="ghost" className="rounded-full size-8 p-0 sm:size-auto sm:px-3" title="Synka Google">
                 <RefreshCw className={`size-4 ${syncing ? "animate-spin" : ""}`} />
               </Button>
-              <Button onClick={disconnectG} size="sm" variant="ghost" className="rounded-full gap-1.5" title="Koppla från Google">
+              <Button onClick={disconnectG} size="sm" variant="ghost" className="rounded-full size-8 p-0 sm:size-auto sm:px-3" title="Koppla från Google">
                 <Link2Off className="size-4" />
               </Button>
             </>
           ) : gConnected === false ? (
-            <Button onClick={connectGoogle} size="sm" variant="outline" className="rounded-full gap-1.5">
-              <Link2 className="size-4" /> Google
+            <Button onClick={connectGoogle} size="sm" variant="outline" className="rounded-full gap-1.5 px-2.5 sm:px-3">
+              <Link2 className="size-4" /> <span className="hidden sm:inline">Google</span>
             </Button>
           ) : null}
-          <Button onClick={() => openCreate()} size="sm" className="rounded-full gap-1.5">
-            <Plus className="size-4" /> Ny
+          <Button onClick={() => openCreate()} size="sm" className="rounded-full gap-1.5 px-2.5 sm:px-3">
+            <Plus className="size-4" /> <span className="hidden sm:inline">Ny</span>
           </Button>
         </div>
       </div>
@@ -307,13 +307,13 @@ function MonthView({ events, members, userId, onDelete, monthOffset, onDayClick 
     <div className="bg-card rounded-2xl ring-1 ring-border overflow-hidden">
       <div className="grid grid-cols-7 border-b border-border">
         {SV_DAYS_SHORT.map((d) => (
-          <div key={d} className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center py-2">
+          <div key={d} className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center py-1.5 sm:py-2">
             {d}
           </div>
         ))}
       </div>
       {weeks.map((week, wi) => (
-        <div key={wi} className="grid grid-cols-7 min-h-[120px]">
+        <div key={wi} className="grid grid-cols-7 min-h-[4.5rem] sm:min-h-[120px]">
           {week.map(({ date, events: dayEvents }) => {
             const isToday = sameDay(date, today);
             const isCurrentMonth = date.getMonth() === month;
@@ -321,12 +321,12 @@ function MonthView({ events, members, userId, onDelete, monthOffset, onDayClick 
               <button
                 key={date.toISOString()}
                 onClick={() => onDayClick(date.toISOString().slice(0, 10))}
-                className={`relative border-b border-r border-border p-1.5 text-left transition-colors hover:bg-muted/40 ${!isCurrentMonth ? "bg-muted/20 opacity-60" : ""}`}
+                className={`relative border-b border-r border-border p-0.5 sm:p-1.5 text-left transition-colors hover:bg-muted/40 min-w-0 overflow-hidden ${!isCurrentMonth ? "bg-muted/20 opacity-60" : ""}`}
               >
-                <span className={`inline-flex items-center justify-center size-6 text-xs font-medium rounded-full mb-1 ${isToday ? "bg-primary text-primary-foreground" : "text-foreground"}`}>
+                <span className={`inline-flex items-center justify-center size-5 sm:size-6 text-[10px] sm:text-xs font-medium rounded-full mb-0.5 sm:mb-1 ${isToday ? "bg-primary text-primary-foreground" : "text-foreground"}`}>
                   {date.getDate()}
                 </span>
-                <div className="flex flex-col gap-1">
+                <div className="hidden sm:flex flex-col gap-1">
                   {dayEvents.slice(0, 3).map((e) => {
                     const ids = (e.member_ids && e.member_ids.length > 0) ? e.member_ids : (e.member_id ? [e.member_id] : []);
                     const assigned = ids.map((id) => members.find((x) => x.id === id)).filter((x): x is Member => Boolean(x));
@@ -340,6 +340,14 @@ function MonthView({ events, members, userId, onDelete, monthOffset, onDayClick 
                   {dayEvents.length > 3 && (
                     <span className="text-[10px] text-muted-foreground pl-1">+{dayEvents.length - 3}</span>
                   )}
+                </div>
+                <div className="flex sm:hidden flex-wrap gap-0.5 justify-center">
+                  {dayEvents.slice(0, 3).map((e) => {
+                    const ids = (e.member_ids && e.member_ids.length > 0) ? e.member_ids : (e.member_id ? [e.member_id] : []);
+                    const assigned = ids.map((id) => members.find((x) => x.id === id)).filter((x): x is Member => Boolean(x));
+                    const color = assigned[0]?.avatar_color ?? "oklch(0.5 0.02 130)";
+                    return <span key={e.id} className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />;
+                  })}
                 </div>
               </button>
             );
@@ -362,7 +370,7 @@ function DayBlock({ date, events, members, userId, onDelete, onClick }: {
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left bg-card rounded-2xl ring-1 ring-border p-4 transition-shadow hover:shadow-sm ${events.length === 0 ? "opacity-70" : ""}`}
+      className={`w-full text-left bg-card rounded-2xl ring-1 ring-border p-3 sm:p-4 transition-shadow hover:shadow-sm min-w-0 ${events.length === 0 ? "opacity-70" : ""}`}
     >
       <div className="flex items-baseline gap-3 mb-3">
         <span className={`text-xs uppercase font-semibold tracking-wider ${isToday ? "text-primary" : "text-muted-foreground"}`}>
@@ -395,23 +403,27 @@ function EventRow({ event: e, members, userId, onDelete }: {
   const color = assigned[0]?.avatar_color ?? "oklch(0.5 0.02 130)";
   const time = e.all_day ? "Heldag" : new Date(e.start_time).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
   return (
-    <div key={e.id} className="group flex items-center gap-3 p-2.5 rounded-lg" style={{ backgroundColor: `color-mix(in oklch, ${color} 10%, transparent)`, borderLeft: `3px solid ${color}` }}>
-      <span className="font-mono text-xs font-semibold shrink-0 w-12" style={{ color }}>{time}</span>
-      <span className="text-sm font-medium flex-1 truncate">{e.title}</span>
-      {assigned.length > 0 && (
-        <span className="flex items-center gap-1 flex-wrap justify-end">
-          {assigned.map((mm) => (
-            <span key={mm.id} className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded" style={{ backgroundColor: `color-mix(in oklch, ${mm.avatar_color} 15%, transparent)`, color: mm.avatar_color }}>
-              {mm.display_name}
-            </span>
-          ))}
-        </span>
-      )}
-      {e.created_by === userId && (
-        <button onClick={(ev) => { ev.stopPropagation(); onDelete(e.id); }} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive">
-          <Trash2 className="size-3.5" />
-        </button>
-      )}
+    <div key={e.id} className="group flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3 p-2 sm:p-2.5 rounded-lg min-w-0" style={{ backgroundColor: `color-mix(in oklch, ${color} 10%, transparent)`, borderLeft: `3px solid ${color}` }}>
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <span className="font-mono text-xs font-semibold shrink-0 w-11 sm:w-12" style={{ color }}>{time}</span>
+        <span className="text-sm font-medium flex-1 truncate">{e.title}</span>
+      </div>
+      <div className="flex items-center gap-1 pl-[3.25rem] sm:pl-0 sm:shrink-0">
+        {assigned.length > 0 && (
+          <span className="flex items-center gap-1 flex-wrap">
+            {assigned.map((mm) => (
+              <span key={mm.id} className="text-[10px] uppercase font-semibold px-1.5 sm:px-2 py-0.5 rounded truncate max-w-[5rem] sm:max-w-none" style={{ backgroundColor: `color-mix(in oklch, ${mm.avatar_color} 15%, transparent)`, color: mm.avatar_color }}>
+                {mm.display_name}
+              </span>
+            ))}
+          </span>
+        )}
+        {e.created_by === userId && (
+          <button onClick={(ev) => { ev.stopPropagation(); onDelete(e.id); }} className="sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive shrink-0 ml-auto sm:ml-0">
+            <Trash2 className="size-3.5" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -475,7 +487,7 @@ function CreateEventDialog({ open, onClose, householdId, members, userId, onCrea
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="rounded-2xl">
+      <DialogContent className="rounded-2xl w-[calc(100%-1.5rem)] max-w-lg max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">Ny händelse</DialogTitle>
         </DialogHeader>

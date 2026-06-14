@@ -78,7 +78,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "Hemmafront — Hushållets kalender och listor" },
       { name: "description", content: "Synka Google-kalendrar och håll koll på inköp, kom ihåg och att göra i realtid — för hela hushållet." },
       { property: "og:title", content: "Hemmafront — Hushållets kalender och listor" },
@@ -115,7 +115,7 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="pb-[env(safe-area-inset-bottom)]">
         {children}
         <Scripts />
       </body>

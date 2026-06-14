@@ -63,9 +63,9 @@ export function Onboarding({ onCreated }: { onCreated: () => void | Promise<void
   };
 
   return (
-    <main className="min-h-screen bg-background py-12 px-4">
-      <div className="mx-auto max-w-md">
-        <div className="flex items-center justify-between mb-8">
+    <main className="min-h-dvh bg-background py-8 sm:py-12 px-4 pt-[max(2rem,env(safe-area-inset-top))]">
+      <div className="mx-auto max-w-md w-full">
+        <div className="flex items-center justify-between mb-6 sm:mb-8">
           <div className="flex items-center gap-3">
             <div className="size-8 rounded-lg bg-primary grid place-items-center text-primary-foreground font-display font-semibold">H</div>
             <span className="font-display text-lg font-semibold">Hemmafront</span>
@@ -73,7 +73,7 @@ export function Onboarding({ onCreated }: { onCreated: () => void | Promise<void
           <button onClick={signOut} className="text-xs text-muted-foreground hover:text-foreground">Logga ut</button>
         </div>
 
-        <div className="bg-card rounded-3xl ring-1 ring-border p-8 shadow-sm">
+        <div className="bg-card rounded-3xl ring-1 ring-border p-6 sm:p-8 shadow-sm">
           {mode === "choose" && (
             <div className="space-y-6">
               <div>

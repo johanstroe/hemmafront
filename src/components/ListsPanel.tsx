@@ -145,18 +145,18 @@ export function ListsPanel({ householdId, userId, members }: { householdId: stri
   };
 
   return (
-    <div>
+    <div className="min-w-0">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-display text-2xl font-semibold">Listor</h2>
+        <h2 className="font-display text-xl sm:text-2xl font-semibold">Listor</h2>
       </div>
 
       <div className="bg-card rounded-2xl ring-1 ring-border overflow-hidden">
-        <div className="flex p-1.5 m-1.5 bg-secondary rounded-xl">
+        <div className="flex p-1 sm:p-1.5 m-1 sm:m-1.5 bg-secondary rounded-xl">
           {TABS.map((t) => (
             <button
               key={t.type}
               onClick={() => setActiveTab(t.type)}
-              className={`flex-1 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              className={`flex-1 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-colors min-w-0 px-1 ${
                 activeTab === t.type ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -165,7 +165,7 @@ export function ListsPanel({ householdId, userId, members }: { householdId: stri
           ))}
         </div>
 
-        <div className="px-4 py-2 max-h-[420px] overflow-y-auto">
+        <div className="px-3 sm:px-4 py-2 max-h-[45dvh] sm:max-h-[420px] overflow-y-auto overscroll-contain">
           {pending.length === 0 && done.length === 0 && (
             <p className="text-sm text-muted-foreground italic text-center py-8">Tomt här. Lägg till något!</p>
           )}
