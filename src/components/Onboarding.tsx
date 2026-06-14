@@ -1,16 +1,15 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useHousehold } from "@/hooks/useHousehold";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { MEMBER_COLORS } from "@/lib/colors";
 
-export function Onboarding() {
+export function Onboarding({ onCreated }: { onCreated: () => void | Promise<void> }) {
   const { user } = useAuth();
-  const { refresh } = useHousehold();
+  const refresh = onCreated;
   const [mode, setMode] = useState<"choose" | "create" | "join">("choose");
   const [householdName, setHouseholdName] = useState("");
   const [displayName, setDisplayName] = useState(
