@@ -272,6 +272,10 @@ export type Database = {
         Args: { _avatar_color: string; _display_name: string; _name: string }
         Returns: string
       }
+      get_household_invite_code: {
+        Args: { _household_id: string }
+        Returns: string
+      }
       is_household_admin: {
         Args: { _household_id: string; _user_id: string }
         Returns: boolean
@@ -279,6 +283,14 @@ export type Database = {
       is_household_member: {
         Args: { _household_id: string; _user_id: string }
         Returns: boolean
+      }
+      join_household_with_invite: {
+        Args: {
+          _avatar_color: string
+          _display_name: string
+          _invite_code: string
+        }
+        Returns: string
       }
     }
     Enums: {
