@@ -439,6 +439,10 @@ function CreateEventDialog({ open, onClose, householdId, members, userId, onCrea
   const [selectedIds, setSelectedIds] = useState<string[]>(myMember ? [myMember.id] : []);
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (defaultDate) setDate(defaultDate);
+  }, [defaultDate]);
+
   const toggleMember = (id: string) => {
     setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   };
