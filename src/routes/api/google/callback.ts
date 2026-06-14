@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { verifyState } from "@/lib/google-calendar.functions";
 
 export const Route = createFileRoute("/api/google/callback")({
   server: {
@@ -18,6 +17,7 @@ export const Route = createFileRoute("/api/google/callback")({
         if (!code || !state) {
           return new Response("Missing code/state", { status: 400 });
         }
+        const { verifyState } = await import("@/lib/google-state.server");
         const userId = verifyState(state);
         if (!userId) {
           return new Response("Invalid state", { status: 400 });
