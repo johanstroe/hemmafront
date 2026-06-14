@@ -25,6 +25,7 @@ export type Database = {
           household_id: string
           id: string
           member_id: string | null
+          member_ids: string[]
           source: string
           start_time: string
           title: string
@@ -40,6 +41,7 @@ export type Database = {
           household_id: string
           id?: string
           member_id?: string | null
+          member_ids?: string[]
           source?: string
           start_time: string
           title: string
@@ -55,6 +57,7 @@ export type Database = {
           household_id?: string
           id?: string
           member_id?: string | null
+          member_ids?: string[]
           source?: string
           start_time?: string
           title?: string
