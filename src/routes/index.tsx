@@ -1,29 +1,36 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useAuth } from "@/hooks/useAuth";
+import { useHousehold } from "@/hooks/useHousehold";
+import { Landing } from "@/components/Landing";
+import { Onboarding } from "@/components/Onboarding";
+import { Dashboard } from "@/components/Dashboard";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Your App" },
-      { name: "description", content: "Replace this with a one-sentence description of your app." },
-      { property: "og:title", content: "Your App" },
-      { property: "og:description", content: "Replace this with a one-sentence description of your app." },
+      { title: "Hemmafront — Hushållets kalender och listor" },
+      { name: "description", content: "Synka Google-kalendrar och håll koll på inköp, kom ihåg och att göra i realtid." },
+      { property: "og:title", content: "Hemmafront" },
+      { property: "og:description", content: "Synka Google-kalendrar och håll koll på inköp, kom ihåg och att göra i realtid." },
     ],
   }),
   component: Index,
+  ssr: false,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
+  const { user, loading: authLoading } = useAuth();
+  const { household, loading: hhLoading } = useHousehold();
+
+  if (authLoading || (user && hhLoading)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="size-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) return <Landing />;
+  if (!household) return <Onboarding />;
+  return <Dashboard />;
 }
