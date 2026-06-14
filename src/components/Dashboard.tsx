@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";import { useHousehold } from "@/hooks/useHousehold";
+import { useAuth } from "@/hooks/useAuth";
+import { useHousehold } from "@/hooks/useHousehold";
 import { useHouseholdNotifications } from "@/hooks/useHouseholdNotifications";
 import { TopBar } from "./TopBar";
 import { CalendarPanel } from "./CalendarPanel";

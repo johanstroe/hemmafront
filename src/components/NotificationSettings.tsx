@@ -13,8 +13,10 @@ import { Switch } from "@/components/ui/switch";
 import {
   getNotificationPrefs,
   isNotificationSupported,
+  registerNotificationServiceWorker,
   requestNotificationPermission,
   saveNotificationPrefs,
+  sendTestNotification,
   type NotificationPrefs,
 } from "@/lib/notifications";
 import { Bell, BellOff } from "lucide-react";
@@ -37,6 +39,7 @@ export function NotificationSettings({ open, onClose }: { open: boolean; onClose
   };
 
   const enableNotifications = async () => {
+    await registerNotificationServiceWorker();
     const result = await requestNotificationPermission();
     if (result === "unsupported") {
       toast.error("Notiser stöds inte i den här webbläsaren");
@@ -109,6 +112,18 @@ export function NotificationSettings({ open, onClose }: { open: boolean; onClose
                   onCheckedChange={(checked) => update({ eventReminders: checked })}
                 />
               </div>
+
+              <Button
+                variant="outline"
+                className="w-full rounded-xl"
+                onClick={async () => {
+                  const ok = await sendTestNotification();
+                  if (ok) toast.success("Test-notis skickad");
+                  else toast.error("Kunde inte skicka testnotis");
+                }}
+              >
+                Skicka testnotis
+              </Button>
             </>
           )}
 
@@ -120,7 +135,7 @@ export function NotificationSettings({ open, onClose }: { open: boolean; onClose
           )}
 
           <p className="text-[11px] text-muted-foreground">
-            På iPhone: lägg till sidan på hemskärmen och tillåt notiser för bäst resultat.
+            På iPhone: öppna sidan i Safari → Dela → Lägg till på hemskärmen. Öppna appen därifrån och tillåt notiser.
           </p>
         </div>
 

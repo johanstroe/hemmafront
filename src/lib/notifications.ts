@@ -7,6 +7,7 @@ export type NotificationPrefs = {
 
 const PREFS_KEY = "hemmafront-notification-prefs";
 const REMINDED_KEY = "hemmafront-reminded-events";
+const SW_PATH = "/sw.js";
 
 const DEFAULT_PREFS: NotificationPrefs = {
   enabled: false,
@@ -14,6 +15,9 @@ const DEFAULT_PREFS: NotificationPrefs = {
   eventReminders: true,
   reminderMinutes: 15,
 };
+
+let swRegistration: ServiceWorkerRegistration | null = null;
+let swRegisterPromise: Promise<ServiceWorkerRegistration | null> | null = null;
 
 export function getNotificationPrefs(): NotificationPrefs {
   try {
@@ -33,7 +37,24 @@ export function isNotificationSupported() {
   return typeof window !== "undefined" && "Notification" in window;
 }
 
+export async function registerNotificationServiceWorker() {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) return null;
+  if (swRegistration) return swRegistration;
+  if (swRegisterPromise) return swRegisterPromise;
+
+  swRegisterPromise = navigator.serviceWorker
+    .register(SW_PATH, { scope: "/" })
+    .then((registration) => {
+      swRegistration = registration;
+      return registration;
+    })
+    .catch(() => null);
+
+  return swRegisterPromise;
+}
+
 export async function requestNotificationPermission() {
+  await registerNotificationServiceWorker();
   if (!isNotificationSupported()) return "unsupported" as const;
   if (Notification.permission === "granted") return "granted" as const;
   if (Notification.permission === "denied") return "denied" as const;
@@ -61,20 +82,39 @@ export function clearOldRemindedEvents(validIds: string[]) {
   sessionStorage.setItem(REMINDED_KEY, JSON.stringify(ids));
 }
 
-export function showBrowserNotification(title: string, body: string, tag?: string) {
-  if (!isNotificationSupported() || Notification.permission !== "granted") return;
+export async function showBrowserNotification(title: string, body: string, tag?: string) {
+  if (!isNotificationSupported() || Notification.permission !== "granted") return false;
+
+  const options: NotificationOptions = {
+    body,
+    tag: tag ?? "hemmafront",
+    icon: "/icon.svg",
+    badge: "/icon.svg",
+  };
+
   try {
-    new Notification(title, { body, tag });
+    const registration = swRegistration ?? (await registerNotificationServiceWorker());
+    if (registration) {
+      await registration.showNotification(title, options);
+      return true;
+    }
   } catch {
-    // iOS / restricted contexts may throw
+    // fall through to Notification API
+  }
+
+  try {
+    new Notification(title, options);
+    return true;
+  } catch {
+    return false;
   }
 }
 
-export function notifyUser(title: string, body: string, tag?: string) {
-  const prefs = getNotificationPrefs();
-  if (!prefs.enabled) return;
-
-  if (document.visibilityState === "hidden") {
-    showBrowserNotification(title, body, tag);
-  }
+export async function sendTestNotification() {
+  const ok = await showBrowserNotification(
+    "Hemmafront test",
+    "Notiser fungerar! Du får påminnelser innan kalenderhändelser.",
+    "hemmafront-test",
+  );
+  return ok;
 }

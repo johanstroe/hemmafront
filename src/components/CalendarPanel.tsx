@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Member } from "@/hooks/useHousehold";
+import { useAppEnter } from "@/hooks/use-app-enter";
 import { useHorizontalSwipe } from "@/hooks/use-swipe";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -9,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Trash2, RefreshCw, Link2, Link2Off, Check, ChevronLeft, ChevronRight, CalendarDays, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
+import { notifyEventSaved } from "@/lib/event-reminders";
 import { getGoogleAuthUrl, getGoogleStatus, syncGoogleCalendar, disconnectGoogle } from "@/lib/google-calendar.functions";
 
 type Event = {
@@ -58,7 +60,7 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
     return { start, end };
   }, [view, monthOffset, weekOffset]);
 
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     const { start, end } = visibleRange;
     const { data } = await supabase
       .from("events")
@@ -68,26 +70,28 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
       .lt("start_time", end.toISOString())
       .order("start_time", { ascending: true });
     setEvents((data as Event[]) ?? []);
-  };
+  }, [householdId, visibleRange]);
 
-  const doSync = async (silent = false) => {
+  const refreshAll = useCallback(async (silent = true) => {
     setSyncing(true);
     try {
-      const res = await runSync({ data: { householdId } });
-      if (!res.connected) {
-        setGConnected(false);
-        return;
+      const status = await getStatus();
+      setGConnected(status.connected);
+      if (status.connected) {
+        const res = await runSync({ data: { householdId } });
+        if (!silent) toast.success(`Synkad: ${res.pulled} hämtade, ${res.pushed} skickade`);
       }
-      setGConnected(true);
-      if (!silent) {
-        toast.success(`Synkad: ${res.pulled} hämtade, ${res.pushed} skickade`);
-      }
-      fetchEvents();
     } catch (e) {
+      setGConnected(false);
       if (!silent) toast.error("Synk misslyckades", { description: (e as Error).message });
     } finally {
       setSyncing(false);
     }
+    await fetchEvents();
+  }, [fetchEvents, getStatus, householdId, runSync]);
+
+  const doSync = async (silent = false) => {
+    await refreshAll(silent);
   };
 
   const connectGoogle = async () => {
@@ -106,11 +110,7 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
   };
 
   useEffect(() => {
-    fetchEvents();
-    getStatus().then((s) => {
-      setGConnected(s.connected);
-      if (s.connected) doSync(true);
-    }).catch(() => setGConnected(false));
+    void refreshAll(true);
 
     const url = new URL(window.location.href);
     const g = url.searchParams.get("google");
@@ -128,13 +128,22 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
 
     const channel = supabase
       .channel(`events-${householdId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "events", filter: `household_id=eq.${householdId}` }, fetchEvents)
+      .on("postgres_changes", { event: "*", schema: "public", table: "events", filter: `household_id=eq.${householdId}` }, () => {
+        void fetchEvents();
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [householdId, view, monthOffset, weekOffset]);
+  }, [householdId, refreshAll, fetchEvents]);
+
+  useEffect(() => {
+    void fetchEvents();
+  }, [fetchEvents]);
+
+  useAppEnter(() => {
+    void refreshAll(true);
+  });
 
   const openCreate = (date?: string) => {
     setCreateDate(date);
@@ -506,7 +515,7 @@ function CreateEventDialog({ open, onClose, householdId, members, userId, onCrea
     if (!title.trim()) return;
     setSubmitting(true);
     const start = allDay ? new Date(`${date}T00:00:00`) : new Date(`${date}T${time}:00`);
-    const { error } = await supabase.from("events").insert({
+    const { data, error } = await supabase.from("events").insert({
       household_id: householdId,
       title: title.trim(),
       start_time: start.toISOString(),
@@ -515,13 +524,17 @@ function CreateEventDialog({ open, onClose, householdId, members, userId, onCrea
       member_ids: selectedIds,
       created_by: userId,
       source: "manual",
-    } as never);
+    } as never).select("id, title, start_time, all_day, member_id, member_ids").single();
     if (error) {
       toast.error("Kunde inte spara", { description: error.message });
       setSubmitting(false);
       return;
     }
-    toast.success("Tillagd i kalendern");
+    if (data && myMember) {
+      await notifyEventSaved(data as { id: string; title: string; start_time: string; all_day: boolean; member_id: string | null; member_ids: string[] | null }, myMember.id);
+    } else {
+      toast.success("Tillagd i kalendern");
+    }
     setTitle("");
     setSubmitting(false);
     onCreated();
