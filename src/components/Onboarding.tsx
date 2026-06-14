@@ -35,13 +35,16 @@ export function Onboarding() {
       setSubmitting(false);
       return;
     }
-    const { error: memberErr } = await supabase.from("household_members").insert({
-      household_id: hh.id,
-      user_id: user.id,
-      display_name: displayName.trim(),
-      avatar_color: MEMBER_COLORS[colorIdx],
-      role: "admin",
-    });
+    const { error: memberErr } = await supabase.from("household_members").upsert(
+      {
+        household_id: hh.id,
+        user_id: user.id,
+        display_name: displayName.trim(),
+        avatar_color: MEMBER_COLORS[colorIdx],
+        role: "admin",
+      },
+      { onConflict: "household_id,user_id" },
+    );
     if (memberErr) {
       toast.error("Kunde inte lägga till dig", { description: memberErr.message });
       setSubmitting(false);
