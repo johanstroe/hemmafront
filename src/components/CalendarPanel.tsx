@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Member } from "@/hooks/useHousehold";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, RefreshCw, Link2, Link2Off, Check } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Link2, Link2Off, Check, ChevronLeft, ChevronRight, CalendarDays, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { getGoogleAuthUrl, getGoogleStatus, syncGoogleCalendar, disconnectGoogle } from "@/lib/google-calendar.functions";
@@ -22,25 +22,41 @@ type Event = {
   created_by: string;
 };
 
-const SV_DAYS = ["Sön", "Mån", "Tis", "Ons", "Tor", "Fre", "Lör"];
+const SV_DAYS_SHORT = ["Sön", "Mån", "Tis", "Ons", "Tor", "Fre", "Lör"];
+const SV_DAYS = ["söndag", "måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag"];
 const SV_MONTHS = ["januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"];
 
 export function CalendarPanel({ householdId, members, userId }: { householdId: string; members: Member[]; userId: string }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [creating, setCreating] = useState(false);
+  const [createDate, setCreateDate] = useState<string | undefined>();
   const [gConnected, setGConnected] = useState<boolean | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [view, setView] = useState<"week" | "month">("week");
+  const [monthOffset, setMonthOffset] = useState(0);
 
   const getAuthUrl = useServerFn(getGoogleAuthUrl);
   const getStatus = useServerFn(getGoogleStatus);
   const runSync = useServerFn(syncGoogleCalendar);
   const disconnect = useServerFn(disconnectGoogle);
 
-  const fetchEvents = async () => {
-    const start = new Date();
+  const visibleRange = useMemo(() => {
+    if (view === "week") {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 7);
+      return { start, end };
+    }
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
     start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 14);
+    const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+    return { start, end };
+  }, [view, monthOffset]);
+
+  const fetchEvents = async () => {
+    const { start, end } = visibleRange;
     const { data } = await supabase
       .from("events")
       .select("*")
@@ -88,13 +104,11 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
 
   useEffect(() => {
     fetchEvents();
-    // Check Google status, then auto-sync on each page load
     getStatus().then((s) => {
       setGConnected(s.connected);
       if (s.connected) doSync(true);
     }).catch(() => setGConnected(false));
 
-    // Show toast for callback redirect
     const url = new URL(window.location.href);
     const g = url.searchParams.get("google");
     if (g === "connected") {
@@ -117,21 +131,18 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [householdId]);
+  }, [householdId, view, monthOffset]);
 
-  // Group events by day (next 7 days)
-  const days: { date: Date; events: Event[] }[] = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() + i);
-    const dayEvents = events.filter((e) => {
-      const ed = new Date(e.start_time);
-      return ed.getFullYear() === d.getFullYear() && ed.getMonth() === d.getMonth() && ed.getDate() === d.getDate();
-    });
-    days.push({ date: d, events: dayEvents });
-  }
+  const openCreate = (date?: string) => {
+    setCreateDate(date);
+    setCreating(true);
+  };
+
+  const monthTitle = useMemo(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + monthOffset);
+    return `${SV_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  }, [monthOffset]);
 
   const deleteEvent = async (id: string) => {
     const { error } = await supabase.from("events").delete().eq("id", id);
@@ -143,9 +154,38 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="font-display text-2xl font-semibold">Kalender</h2>
-          <p className="text-xs text-muted-foreground">Kommande 7 dagar</p>
+          <p className="text-xs text-muted-foreground">
+            {view === "week" ? "Kommande 7 dagar" : monthTitle}
+          </p>
         </div>
         <div className="flex items-center gap-2">
+          {view === "month" && (
+            <div className="flex items-center gap-1">
+              <Button onClick={() => setMonthOffset((o) => o - 1)} size="sm" variant="ghost" className="rounded-full size-8 p-0">
+                <ChevronLeft className="size-4" />
+              </Button>
+              <Button onClick={() => setMonthOffset(0)} size="sm" variant="ghost" className="rounded-full text-xs px-2">
+                Idag
+              </Button>
+              <Button onClick={() => setMonthOffset((o) => o + 1)} size="sm" variant="ghost" className="rounded-full size-8 p-0">
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          )}
+          <div className="flex items-center bg-muted rounded-full p-0.5">
+            <button
+              onClick={() => setView("week")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${view === "week" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <CalendarDays className="size-3.5" /> Vecka
+            </button>
+            <button
+              onClick={() => setView("month")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${view === "month" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <CalendarIcon className="size-3.5" /> Månad
+            </button>
+          </div>
           {gConnected === true ? (
             <>
               <Button onClick={() => doSync(false)} disabled={syncing} size="sm" variant="ghost" className="rounded-full gap-1.5" title="Synka Google">
@@ -160,50 +200,173 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
               <Link2 className="size-4" /> Google
             </Button>
           ) : null}
-          <Button onClick={() => setCreating(true)} size="sm" className="rounded-full gap-1.5">
+          <Button onClick={() => openCreate()} size="sm" className="rounded-full gap-1.5">
             <Plus className="size-4" /> Ny
           </Button>
         </div>
       </div>
 
-      <div className="space-y-3">
-        {days.map(({ date, events: dayEvents }) => (
-          <DayBlock
-            key={date.toISOString()}
-            date={date}
-            events={dayEvents}
-            members={members}
-            userId={userId}
-            onDelete={deleteEvent}
-          />
-        ))}
-      </div>
+      {view === "week" ? (
+        <WeekView events={events} members={members} userId={userId} onDelete={deleteEvent} onDayClick={openCreate} />
+      ) : (
+        <MonthView events={events} members={members} userId={userId} onDelete={deleteEvent} monthOffset={monthOffset} onDayClick={openCreate} />
+      )}
 
       <CreateEventDialog
         open={creating}
-        onClose={() => setCreating(false)}
+        onClose={() => { setCreating(false); setCreateDate(undefined); }}
         householdId={householdId}
         members={members}
         userId={userId}
         onCreated={fetchEvents}
+        defaultDate={createDate}
       />
     </div>
   );
 }
 
-function DayBlock({ date, events, members, userId, onDelete }: {
+function WeekView({ events, members, userId, onDelete, onDayClick }: {
+  events: Event[];
+  members: Member[];
+  userId: string;
+  onDelete: (id: string) => void;
+  onDayClick: (date?: string) => void;
+}) {
+  const days: { date: Date; events: Event[] }[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const dayEvents = events.filter((e) => sameDay(new Date(e.start_time), d));
+    days.push({ date: d, events: dayEvents });
+  }
+
+  return (
+    <div className="space-y-3">
+      {days.map(({ date, events: dayEvents }) => (
+        <DayBlock
+          key={date.toISOString()}
+          date={date}
+          events={dayEvents}
+          members={members}
+          userId={userId}
+          onDelete={onDelete}
+          onClick={() => onDayClick(date.toISOString().slice(0, 10))}
+        />
+      ))}
+    </div>
+  );
+}
+
+function MonthView({ events, members, userId, onDelete, monthOffset, onDayClick }: {
+  events: Event[];
+  members: Member[];
+  userId: string;
+  onDelete: (id: string) => void;
+  monthOffset: number;
+  onDayClick: (date?: string) => void;
+}) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + monthOffset;
+  const firstOfMonth = new Date(year, month, 1);
+  const startDay = firstOfMonth.getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const weeks: { date: Date; events: Event[] }[][] = [];
+  let currentWeek: { date: Date; events: Event[] }[] = [];
+
+  // Pad with previous month days
+  const prevMonthDays = new Date(year, month, 0).getDate();
+  for (let i = startDay - 1; i >= 0; i--) {
+    const d = new Date(year, month - 1, prevMonthDays - i);
+    currentWeek.push({ date: d, events: events.filter((e) => sameDay(new Date(e.start_time), d)) });
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month, day);
+    currentWeek.push({ date: d, events: events.filter((e) => sameDay(new Date(e.start_time), d)) });
+    if (currentWeek.length === 7) {
+      weeks.push(currentWeek);
+      currentWeek = [];
+    }
+  }
+
+  // Pad remaining cells
+  let nextDay = 1;
+  while (currentWeek.length < 7) {
+    const d = new Date(year, month + 1, nextDay++);
+    currentWeek.push({ date: d, events: events.filter((e) => sameDay(new Date(e.start_time), d)) });
+  }
+  weeks.push(currentWeek);
+
+  const today = new Date();
+
+  return (
+    <div className="bg-card rounded-2xl ring-1 ring-border overflow-hidden">
+      <div className="grid grid-cols-7 border-b border-border">
+        {SV_DAYS_SHORT.map((d) => (
+          <div key={d} className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center py-2">
+            {d}
+          </div>
+        ))}
+      </div>
+      {weeks.map((week, wi) => (
+        <div key={wi} className="grid grid-cols-7 min-h-[120px]">
+          {week.map(({ date, events: dayEvents }) => {
+            const isToday = sameDay(date, today);
+            const isCurrentMonth = date.getMonth() === month;
+            return (
+              <button
+                key={date.toISOString()}
+                onClick={() => onDayClick(date.toISOString().slice(0, 10))}
+                className={`relative border-b border-r border-border p-1.5 text-left transition-colors hover:bg-muted/40 ${!isCurrentMonth ? "bg-muted/20 opacity-60" : ""}`}
+              >
+                <span className={`inline-flex items-center justify-center size-6 text-xs font-medium rounded-full mb-1 ${isToday ? "bg-primary text-primary-foreground" : "text-foreground"}`}>
+                  {date.getDate()}
+                </span>
+                <div className="flex flex-col gap-1">
+                  {dayEvents.slice(0, 3).map((e) => {
+                    const ids = (e.member_ids && e.member_ids.length > 0) ? e.member_ids : (e.member_id ? [e.member_id] : []);
+                    const assigned = ids.map((id) => members.find((x) => x.id === id)).filter((x): x is Member => Boolean(x));
+                    const color = assigned[0]?.avatar_color ?? "oklch(0.5 0.02 130)";
+                    return (
+                      <div key={e.id} className="flex items-center gap-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium truncate" style={{ backgroundColor: `color-mix(in oklch, ${color} 12%, transparent)`, color, borderLeft: `2px solid ${color}` }}>
+                        <span className="truncate">{e.title}</span>
+                      </div>
+                    );
+                  })}
+                  {dayEvents.length > 3 && (
+                    <span className="text-[10px] text-muted-foreground pl-1">+{dayEvents.length - 3}</span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DayBlock({ date, events, members, userId, onDelete, onClick }: {
   date: Date;
   events: Event[];
   members: Member[];
   userId: string;
   onDelete: (id: string) => void;
+  onClick?: () => void;
 }) {
-  const isToday = date.toDateString() === new Date().toDateString();
+  const isToday = sameDay(date, new Date());
   return (
-    <div className={`bg-card rounded-2xl ring-1 ring-border p-4 ${events.length === 0 ? "opacity-70" : ""}`}>
+    <button
+      onClick={onClick}
+      className={`w-full text-left bg-card rounded-2xl ring-1 ring-border p-4 transition-shadow hover:shadow-sm ${events.length === 0 ? "opacity-70" : ""}`}
+    >
       <div className="flex items-baseline gap-3 mb-3">
         <span className={`text-xs uppercase font-semibold tracking-wider ${isToday ? "text-primary" : "text-muted-foreground"}`}>
-          {isToday ? "Idag" : SV_DAYS[date.getDay()]}
+          {isToday ? "Idag" : SV_DAYS_SHORT[date.getDay()]}
         </span>
         <span className="font-display text-lg font-semibold">{date.getDate()}</span>
         <span className="text-xs text-muted-foreground">{SV_MONTHS[date.getMonth()]}</span>
@@ -212,40 +375,49 @@ function DayBlock({ date, events, members, userId, onDelete }: {
         <p className="text-xs text-muted-foreground italic">Inget planerat</p>
       ) : (
         <div className="space-y-2">
-          {events.map((e) => {
-            const ids = (e.member_ids && e.member_ids.length > 0)
-              ? e.member_ids
-              : (e.member_id ? [e.member_id] : []);
-            const assigned = ids
-              .map((id) => members.find((x) => x.id === id))
-              .filter((x): x is Member => Boolean(x));
-            const color = assigned[0]?.avatar_color ?? "oklch(0.5 0.02 130)";
-            const time = e.all_day ? "Heldag" : new Date(e.start_time).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
-            return (
-              <div key={e.id} className="group flex items-center gap-3 p-2.5 rounded-lg" style={{ backgroundColor: `color-mix(in oklch, ${color} 10%, transparent)`, borderLeft: `3px solid ${color}` }}>
-                <span className="font-mono text-xs font-semibold shrink-0 w-12" style={{ color }}>{time}</span>
-                <span className="text-sm font-medium flex-1 truncate">{e.title}</span>
-                {assigned.length > 0 && (
-                  <span className="flex items-center gap-1 flex-wrap justify-end">
-                    {assigned.map((mm) => (
-                      <span key={mm.id} className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded" style={{ backgroundColor: `color-mix(in oklch, ${mm.avatar_color} 15%, transparent)`, color: mm.avatar_color }}>
-                        {mm.display_name}
-                      </span>
-                    ))}
-                  </span>
-                )}
-                {e.created_by === userId && (
-                  <button onClick={() => onDelete(e.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive">
-                    <Trash2 className="size-3.5" />
-                  </button>
-                )}
-              </div>
-            );
-          })}
+          {events.map((e) => (
+            <EventRow key={e.id} event={e} members={members} userId={userId} onDelete={onDelete} />
+          ))}
         </div>
+      )}
+    </button>
+  );
+}
+
+function EventRow({ event: e, members, userId, onDelete }: {
+  event: Event;
+  members: Member[];
+  userId: string;
+  onDelete: (id: string) => void;
+}) {
+  const ids = (e.member_ids && e.member_ids.length > 0) ? e.member_ids : (e.member_id ? [e.member_id] : []);
+  const assigned = ids.map((id) => members.find((x) => x.id === id)).filter((x): x is Member => Boolean(x));
+  const color = assigned[0]?.avatar_color ?? "oklch(0.5 0.02 130)";
+  const time = e.all_day ? "Heldag" : new Date(e.start_time).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
+  return (
+    <div key={e.id} className="group flex items-center gap-3 p-2.5 rounded-lg" style={{ backgroundColor: `color-mix(in oklch, ${color} 10%, transparent)`, borderLeft: `3px solid ${color}` }}>
+      <span className="font-mono text-xs font-semibold shrink-0 w-12" style={{ color }}>{time}</span>
+      <span className="text-sm font-medium flex-1 truncate">{e.title}</span>
+      {assigned.length > 0 && (
+        <span className="flex items-center gap-1 flex-wrap justify-end">
+          {assigned.map((mm) => (
+            <span key={mm.id} className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded" style={{ backgroundColor: `color-mix(in oklch, ${mm.avatar_color} 15%, transparent)`, color: mm.avatar_color }}>
+              {mm.display_name}
+            </span>
+          ))}
+        </span>
+      )}
+      {e.created_by === userId && (
+        <button onClick={(ev) => { ev.stopPropagation(); onDelete(e.id); }} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive">
+          <Trash2 className="size-3.5" />
+        </button>
       )}
     </div>
   );
+}
+
+function sameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
 function CreateEventDialog({ open, onClose, householdId, members, userId, onCreated }: {
