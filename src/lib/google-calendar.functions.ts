@@ -153,7 +153,7 @@ export const syncGoogleCalendar = createServerFn({ method: "POST" })
       const startTime = ev.start?.dateTime ?? (ev.start?.date ? `${ev.start.date}T00:00:00Z` : null);
       const endTime = ev.end?.dateTime ?? (ev.end?.date ? `${ev.end.date}T00:00:00Z` : null);
       if (!startTime) continue;
-      await supabaseAdmin.from("events").upsert(
+      const { error: upsertErr } = await supabaseAdmin.from("events").upsert(
         {
           household_id: data.householdId,
           google_event_id: ev.id,
@@ -168,6 +168,7 @@ export const syncGoogleCalendar = createServerFn({ method: "POST" })
         },
         { onConflict: "household_id,google_event_id" },
       );
+      if (upsertErr) throw new Error(`Upsert misslyckades: ${upsertErr.message}`);
       pulled++;
     }
 
