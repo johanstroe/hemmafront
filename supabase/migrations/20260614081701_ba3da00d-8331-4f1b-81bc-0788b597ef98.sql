@@ -1,0 +1,2 @@
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS member_ids uuid[] NOT NULL DEFAULT '{}';
+UPDATE public.events SET member_ids = ARRAY[member_id] WHERE member_id IS NOT NULL AND (member_ids IS NULL OR array_length(member_ids,1) IS NULL);

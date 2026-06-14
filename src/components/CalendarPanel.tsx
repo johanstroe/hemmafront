@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, RefreshCw, Link2, Link2Off } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Link2, Link2Off, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { getGoogleAuthUrl, getGoogleStatus, syncGoogleCalendar, disconnectGoogle } from "@/lib/google-calendar.functions";
@@ -19,6 +18,7 @@ type Event = {
   end_time: string | null;
   all_day: boolean;
   member_id: string | null;
+  member_ids: string[] | null;
   created_by: string;
 };
 
@@ -213,16 +213,25 @@ function DayBlock({ date, events, members, userId, onDelete }: {
       ) : (
         <div className="space-y-2">
           {events.map((e) => {
-            const m = members.find((x) => x.id === e.member_id);
-            const color = m?.avatar_color ?? "oklch(0.5 0.02 130)";
+            const ids = (e.member_ids && e.member_ids.length > 0)
+              ? e.member_ids
+              : (e.member_id ? [e.member_id] : []);
+            const assigned = ids
+              .map((id) => members.find((x) => x.id === id))
+              .filter((x): x is Member => Boolean(x));
+            const color = assigned[0]?.avatar_color ?? "oklch(0.5 0.02 130)";
             const time = e.all_day ? "Heldag" : new Date(e.start_time).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
             return (
               <div key={e.id} className="group flex items-center gap-3 p-2.5 rounded-lg" style={{ backgroundColor: `color-mix(in oklch, ${color} 10%, transparent)`, borderLeft: `3px solid ${color}` }}>
                 <span className="font-mono text-xs font-semibold shrink-0 w-12" style={{ color }}>{time}</span>
                 <span className="text-sm font-medium flex-1 truncate">{e.title}</span>
-                {m && (
-                  <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded" style={{ backgroundColor: `color-mix(in oklch, ${color} 15%, transparent)`, color }}>
-                    {m.display_name}
+                {assigned.length > 0 && (
+                  <span className="flex items-center gap-1 flex-wrap justify-end">
+                    {assigned.map((mm) => (
+                      <span key={mm.id} className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded" style={{ backgroundColor: `color-mix(in oklch, ${mm.avatar_color} 15%, transparent)`, color: mm.avatar_color }}>
+                        {mm.display_name}
+                      </span>
+                    ))}
                   </span>
                 )}
                 {e.created_by === userId && (
@@ -254,8 +263,12 @@ function CreateEventDialog({ open, onClose, householdId, members, userId, onCrea
   const [date, setDate] = useState(defaultDate);
   const [time, setTime] = useState("18:00");
   const [allDay, setAllDay] = useState(false);
-  const [memberId, setMemberId] = useState<string>(myMember?.id ?? "");
+  const [selectedIds, setSelectedIds] = useState<string[]>(myMember ? [myMember.id] : []);
   const [submitting, setSubmitting] = useState(false);
+
+  const toggleMember = (id: string) => {
+    setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  };
 
   const submit = async () => {
     if (!title.trim()) return;
@@ -266,10 +279,11 @@ function CreateEventDialog({ open, onClose, householdId, members, userId, onCrea
       title: title.trim(),
       start_time: start.toISOString(),
       all_day: allDay,
-      member_id: memberId || null,
+      member_id: selectedIds[0] ?? null,
+      member_ids: selectedIds,
       created_by: userId,
       source: "manual",
-    });
+    } as never);
     if (error) {
       toast.error("Kunde inte spara", { description: error.message });
       setSubmitting(false);
@@ -308,20 +322,25 @@ function CreateEventDialog({ open, onClose, householdId, members, userId, onCrea
             Heldag
           </label>
           <div className="space-y-2">
-            <Label>För vem?</Label>
-            <Select value={memberId} onValueChange={setMemberId}>
-              <SelectTrigger><SelectValue placeholder="Välj medlem" /></SelectTrigger>
-              <SelectContent>
-                {members.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    <span className="inline-flex items-center gap-2">
-                      <span className="size-2.5 rounded-full" style={{ backgroundColor: m.avatar_color }} />
-                      {m.display_name}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>För vem? <span className="text-xs text-muted-foreground font-normal">(välj en eller flera)</span></Label>
+            <div className="flex flex-wrap gap-2">
+              {members.map((m) => {
+                const active = selectedIds.includes(m.id);
+                return (
+                  <button
+                    type="button"
+                    key={m.id}
+                    onClick={() => toggleMember(m.id)}
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ring-1 ${active ? "ring-2" : "ring-border opacity-60 hover:opacity-100"}`}
+                    style={active ? { backgroundColor: `color-mix(in oklch, ${m.avatar_color} 18%, transparent)`, color: m.avatar_color, boxShadow: `inset 0 0 0 1px ${m.avatar_color}` } : undefined}
+                  >
+                    <span className="size-2.5 rounded-full" style={{ backgroundColor: m.avatar_color }} />
+                    {m.display_name}
+                    {active && <Check className="size-3.5" />}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
         <DialogFooter>
