@@ -82,9 +82,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Hemmafront — Hushållets kalender och listor" },
       { name: "description", content: "Synka Google-kalendrar och håll koll på inköp, kom ihåg och att göra i realtid — för hela hushållet." },
       { property: "og:title", content: "Hemmafront — Hushållets kalender och listor" },
-      { property: "og:description", content: "Synka Google-kalendrar och håll koll på inköp, kom ihåg och att göra i realtid." },
+      { property: "og:description", content: "Synka Google-kalendrar och håll koll på inköp, kom ihåg och att göra i realtid — för hela hushållet." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Hemmafront — Hushållets kalender och listor" },
+      { name: "twitter:description", content: "Synka Google-kalendrar och håll koll på inköp, kom ihåg och att göra i realtid — för hela hushållet." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/953c7ab8-0220-4430-b93c-d4826075554c/id-preview-bd67cad6--df8ad767-7c6b-4591-9915-bc8a47ecd650.lovable.app-1781424376408.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/953c7ab8-0220-4430-b93c-d4826075554c/id-preview-bd67cad6--df8ad767-7c6b-4591-9915-bc8a47ecd650.lovable.app-1781424376408.png" },
     ],
     links: [
       {
