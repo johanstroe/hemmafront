@@ -9,14 +9,14 @@ import { InviteSheet } from "./InviteSheet";
 
 export function Dashboard() {
   const { user } = useAuth();
-  const { household, members } = useHousehold();
+  const { household, members, refresh } = useHousehold();
   const [showInvite, setShowInvite] = useState(false);
 
   if (!user || !household) return null;
 
   return (
     <main className="min-h-screen bg-background">
-      <TopBar household={household} members={members} onInvite={() => setShowInvite(true)} />
+      <TopBar household={household} members={members} userId={user.id} onInvite={() => setShowInvite(true)} onRenamed={refresh} />
       <div className="mx-auto max-w-6xl px-4 lg:px-8 py-6 lg:py-10">
         <div className="grid lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           <section className="lg:col-span-7">
