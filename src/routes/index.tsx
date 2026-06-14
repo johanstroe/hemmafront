@@ -20,7 +20,7 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const { user, loading: authLoading } = useAuth();
-  const { household, loading: hhLoading } = useHousehold();
+  const { household, loading: hhLoading, refresh } = useHousehold();
 
   if (authLoading || (user && hhLoading)) {
     return (
@@ -31,6 +31,6 @@ function Index() {
   }
 
   if (!user) return <Landing />;
-  if (!household) return <Onboarding />;
+  if (!household) return <Onboarding onCreated={refresh} />;
   return <Dashboard />;
 }
