@@ -194,7 +194,6 @@ export type Database = {
           created_by: string
           id: string
           list_id: string
-          parent_id: string | null
           updated_at: string
         }
         Insert: {
@@ -206,7 +205,6 @@ export type Database = {
           created_by: string
           id?: string
           list_id: string
-          parent_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -218,7 +216,6 @@ export type Database = {
           created_by?: string
           id?: string
           list_id?: string
-          parent_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -227,13 +224,6 @@ export type Database = {
             columns: ["list_id"]
             isOneToOne: false
             referencedRelation: "lists"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "list_items_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "list_items"
             referencedColumns: ["id"]
           },
         ]
