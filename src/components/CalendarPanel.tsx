@@ -212,41 +212,6 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
   );
 }
 
-function WeekView({ weekStart, events, members, userId, onDelete, onDayClick }: {
-  weekStart: Date;
-  events: Event[];
-  members: Member[];
-  userId: string;
-  onDelete: (id: string) => void;
-  onDayClick: (date?: string) => void;
-}) {
-  const days: { date: Date; events: Event[] }[] = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(weekStart);
-    d.setDate(d.getDate() + i);
-    const dayEvents = events.filter((e) => sameDay(new Date(e.start_time), d));
-    days.push({ date: d, events: dayEvents });
-  }
-
-  return (
-    <div className="space-y-3">
-      {days.map(({ date, events: dayEvents }) => (
-        <DayBlock
-          key={date.toISOString()}
-          date={date}
-          events={dayEvents}
-          members={members}
-          userId={userId}
-          onDelete={onDelete}
-          onClick={() => onDayClick(date.toISOString().slice(0, 10))}
-        />
-      ))}
-    </div>
-  );
-}
-
 function MonthView({ events, members, userId, onDelete, monthOffset, onDayClick }: {
   events: Event[];
   members: Member[];
