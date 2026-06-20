@@ -326,6 +326,7 @@ function MonthView({ events, members, userId, onDelete, monthOffset, onDayClick 
   const month = now.getMonth() + monthOffset;
   const firstOfMonth = new Date(year, month, 1);
   const startDay = firstOfMonth.getDay();
+  const mondayStartOffset = (startDay + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const weeks: { date: Date; events: Event[] }[][] = [];
@@ -333,7 +334,7 @@ function MonthView({ events, members, userId, onDelete, monthOffset, onDayClick 
 
   // Pad with previous month days
   const prevMonthDays = new Date(year, month, 0).getDate();
-  for (let i = startDay - 1; i >= 0; i--) {
+  for (let i = mondayStartOffset - 1; i >= 0; i--) {
     const d = new Date(year, month - 1, prevMonthDays - i);
     currentWeek.push({ date: d, events: events.filter((e) => sameDay(new Date(e.start_time), d)) });
   }
