@@ -429,7 +429,7 @@ function DayBlock({ date, events, members, userId, onDelete, onClick }: {
     >
       <div className="flex items-baseline gap-3 mb-3">
         <span className={`text-xs uppercase font-semibold tracking-wider ${isToday ? "text-primary" : "text-muted-foreground"}`}>
-          {isToday ? "Idag" : SV_DAYS_SHORT[date.getDay()]}
+          {isToday ? "Idag" : SV_DAYS_SHORT[(date.getDay() + 6) % 7]}
         </span>
         <span className="font-display text-lg font-semibold">{date.getDate()}</span>
         <span className="text-xs text-muted-foreground">{SV_MONTHS[date.getMonth()]}</span>
