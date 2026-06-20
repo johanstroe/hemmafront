@@ -46,12 +46,14 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
 
   const visibleRange = useMemo(() => {
     if (view === "week") {
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-      start.setDate(start.getDate() + weekOffset * 7);
-      const end = new Date(start);
+      const base = new Date();
+      base.setHours(0, 0, 0, 0);
+      base.setDate(base.getDate() + weekOffset * 7);
+      const mondayOffset = (base.getDay() + 6) % 7;
+      base.setDate(base.getDate() - mondayOffset);
+      const end = new Date(base);
       end.setDate(end.getDate() + 7);
-      return { start, end };
+      return { start: base, end };
     }
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
