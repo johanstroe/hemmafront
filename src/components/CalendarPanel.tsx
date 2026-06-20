@@ -302,7 +302,7 @@ function MonthView({ events, members, userId, onDelete, monthOffset, onDayClick 
         ))}
       </div>
       {weeks.map((week, wi) => (
-        <div key={wi} className="grid grid-cols-7 min-h-[4.5rem] sm:min-h-[120px]">
+        <div key={wi} className="grid grid-cols-7 min-h-[5.5rem] sm:min-h-[120px]">
           {week.map(({ date, events: dayEvents }) => {
             const isToday = sameDay(date, today);
             const isCurrentMonth = date.getMonth() === month;
@@ -330,13 +330,20 @@ function MonthView({ events, members, userId, onDelete, monthOffset, onDayClick 
                     <span className="text-[10px] text-muted-foreground pl-1">+{dayEvents.length - 3}</span>
                   )}
                 </div>
-                <div className="flex sm:hidden flex-wrap gap-0.5 justify-center">
-                  {dayEvents.slice(0, 3).map((e) => {
+                <div className="flex sm:hidden flex-col gap-0.5">
+                  {dayEvents.slice(0, 2).map((e) => {
                     const ids = (e.member_ids && e.member_ids.length > 0) ? e.member_ids : (e.member_id ? [e.member_id] : []);
                     const assigned = ids.map((id) => members.find((x) => x.id === id)).filter((x): x is Member => Boolean(x));
                     const color = assigned[0]?.avatar_color ?? "oklch(0.5 0.02 130)";
-                    return <span key={e.id} className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />;
+                    return (
+                      <div key={e.id} className="px-1 py-0.5 rounded text-[9px] leading-tight font-medium truncate" style={{ backgroundColor: `color-mix(in oklch, ${color} 14%, transparent)`, color, borderLeft: `2px solid ${color}` }}>
+                        {e.title}
+                      </div>
+                    );
                   })}
+                  {dayEvents.length > 2 && (
+                    <span className="text-[9px] text-muted-foreground pl-0.5">+{dayEvents.length - 2}</span>
+                  )}
                 </div>
               </button>
             );
