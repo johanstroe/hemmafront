@@ -25,8 +25,8 @@ type Event = {
   created_by: string;
 };
 
-const SV_DAYS_SHORT = ["Sön", "Mån", "Tis", "Ons", "Tor", "Fre", "Lör"];
-const SV_DAYS = ["söndag", "måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag"];
+const SV_DAYS_SHORT = ["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"];
+const SV_DAYS = ["måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag", "söndag"];
 const SV_MONTHS = ["januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"];
 
 export function CalendarPanel({ householdId, members, userId }: { householdId: string; members: Member[]; userId: string }) {
@@ -46,12 +46,14 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
 
   const visibleRange = useMemo(() => {
     if (view === "week") {
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-      start.setDate(start.getDate() + weekOffset * 7);
-      const end = new Date(start);
+      const base = new Date();
+      base.setHours(0, 0, 0, 0);
+      base.setDate(base.getDate() + weekOffset * 7);
+      const mondayOffset = (base.getDay() + 6) % 7;
+      base.setDate(base.getDate() - mondayOffset);
+      const end = new Date(base);
       end.setDate(end.getDate() + 7);
-      return { start, end };
+      return { start: base, end };
     }
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
@@ -324,6 +326,7 @@ function MonthView({ events, members, userId, onDelete, monthOffset, onDayClick 
   const month = now.getMonth() + monthOffset;
   const firstOfMonth = new Date(year, month, 1);
   const startDay = firstOfMonth.getDay();
+  const mondayStartOffset = (startDay + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const weeks: { date: Date; events: Event[] }[][] = [];
@@ -331,7 +334,7 @@ function MonthView({ events, members, userId, onDelete, monthOffset, onDayClick 
 
   // Pad with previous month days
   const prevMonthDays = new Date(year, month, 0).getDate();
-  for (let i = startDay - 1; i >= 0; i--) {
+  for (let i = mondayStartOffset - 1; i >= 0; i--) {
     const d = new Date(year, month - 1, prevMonthDays - i);
     currentWeek.push({ date: d, events: events.filter((e) => sameDay(new Date(e.start_time), d)) });
   }
@@ -426,7 +429,7 @@ function DayBlock({ date, events, members, userId, onDelete, onClick }: {
     >
       <div className="flex items-baseline gap-3 mb-3">
         <span className={`text-xs uppercase font-semibold tracking-wider ${isToday ? "text-primary" : "text-muted-foreground"}`}>
-          {isToday ? "Idag" : SV_DAYS_SHORT[date.getDay()]}
+          {isToday ? "Idag" : SV_DAYS_SHORT[(date.getDay() + 6) % 7]}
         </span>
         <span className="font-display text-lg font-semibold">{date.getDate()}</span>
         <span className="text-xs text-muted-foreground">{SV_MONTHS[date.getMonth()]}</span>
