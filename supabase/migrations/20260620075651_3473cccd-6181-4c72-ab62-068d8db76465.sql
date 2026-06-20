@@ -1,0 +1,1 @@
+ALTER TABLE public.list_items ADD COLUMN parent_id UUID REFERENCES public.list_items(id) ON DELETE CASCADE; CREATE INDEX IF NOT EXISTS list_items_parent_id_idx ON public.list_items(parent_id);
