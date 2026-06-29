@@ -70,7 +70,12 @@ async function refreshAccessToken(refreshToken: string): Promise<{ access_token:
       grant_type: "refresh_token",
     }),
   });
-  if (!res.ok) throw new Error(`Token refresh failed: ${res.status} ${await res.text()}`);
+  if (!res.ok) {
+    const body = await res.text();
+    const err = new Error(`Token refresh failed: ${res.status} ${body}`) as Error & { invalidGrant?: boolean };
+    if (res.status === 400 && body.includes("invalid_grant")) err.invalidGrant = true;
+    throw err;
+  }
   return res.json();
 }
 
@@ -86,7 +91,17 @@ async function getValidAccessToken(userId: string): Promise<{ token: string; cal
   if (expiresAt - Date.now() > 60_000) {
     return { token: data.access_token, calendarId: data.calendar_id };
   }
-  const refreshed = await refreshAccessToken(data.refresh_token);
+  let refreshed;
+  try {
+    refreshed = await refreshAccessToken(data.refresh_token);
+  } catch (e) {
+    if ((e as { invalidGrant?: boolean }).invalidGrant) {
+      // Stored refresh token is no longer valid — drop it so user can reconnect.
+      await supabaseAdmin.from("google_calendar_tokens").delete().eq("user_id", userId);
+      return null;
+    }
+    throw e;
+  }
   const newExpiry = new Date(Date.now() + refreshed.expires_in * 1000).toISOString();
   await supabaseAdmin
     .from("google_calendar_tokens")
