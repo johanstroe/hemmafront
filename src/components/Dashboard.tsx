@@ -6,6 +6,7 @@ import { TopBar } from "./TopBar";
 import { CalendarPanel } from "./CalendarPanel";
 import { ListsPanel } from "./ListsPanel";
 import { InviteSheet } from "./InviteSheet";
+import { NoticesPanel } from "./NoticesPanel";
 
 export function Dashboard() {
   const { user } = useAuth();
@@ -26,6 +27,9 @@ export function Dashboard() {
           </section>
           <section className="lg:col-span-5 min-w-0">
             <ListsPanel householdId={household.id} userId={user.id} members={members} />
+          </section>
+          <section className="lg:col-span-12 min-w-0">
+            <NoticesPanel householdId={household.id} userId={user.id} members={members} />
           </section>
         </div>
       </div>
