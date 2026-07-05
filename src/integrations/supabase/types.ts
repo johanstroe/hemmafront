@@ -276,6 +276,47 @@ export type Database = {
           },
         ]
       }
+      notices: {
+        Row: {
+          color: string
+          content: string
+          created_at: string
+          created_by: string
+          household_id: string
+          id: string
+          pinned: boolean
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          content: string
+          created_at?: string
+          created_by: string
+          household_id: string
+          id?: string
+          pinned?: boolean
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          content?: string
+          created_at?: string
+          created_by?: string
+          household_id?: string
+          id?: string
+          pinned?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notices_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
