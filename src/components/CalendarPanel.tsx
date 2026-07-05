@@ -33,6 +33,7 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
   const [events, setEvents] = useState<Event[]>([]);
   const [creating, setCreating] = useState(false);
   const [createDate, setCreateDate] = useState<string | undefined>();
+  const [viewEvent, setViewEvent] = useState<Event | null>(null);
   const [gConnected, setGConnected] = useState<boolean | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0);
@@ -196,7 +197,7 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
       </div>
 
       <div className="touch-pan-y sm:touch-auto" {...monthSwipe}>
-        <MonthView events={events} members={members} userId={userId} onDelete={deleteEvent} monthOffset={monthOffset} onDayClick={openCreate} />
+        <MonthView events={events} members={members} monthOffset={monthOffset} onEventClick={setViewEvent} />
       </div>
 
       <CreateEventDialog
@@ -208,17 +209,22 @@ export function CalendarPanel({ householdId, members, userId }: { householdId: s
         onCreated={fetchEvents}
         defaultDate={createDate}
       />
+      <EventDetailsDialog
+        event={viewEvent}
+        members={members}
+        userId={userId}
+        onClose={() => setViewEvent(null)}
+        onDelete={async (id) => { await deleteEvent(id); setViewEvent(null); }}
+      />
     </div>
   );
 }
 
-function MonthView({ events, members, userId, onDelete, monthOffset, onDayClick }: {
+function MonthView({ events, members, monthOffset, onEventClick }: {
   events: Event[];
   members: Member[];
-  userId: string;
-  onDelete: (id: string) => void;
   monthOffset: number;
-  onDayClick: (date?: string) => void;
+  onEventClick: (event: Event) => void;
 }) {
   const now = new Date();
   const year = now.getFullYear();
@@ -272,10 +278,9 @@ function MonthView({ events, members, userId, onDelete, monthOffset, onDayClick 
             const isToday = sameDay(date, today);
             const isCurrentMonth = date.getMonth() === month;
             return (
-              <button
+              <div
                 key={date.toISOString()}
-                onClick={() => onDayClick(date.toISOString().slice(0, 10))}
-                className={`relative border-b border-r border-border p-0.5 sm:p-1.5 text-left transition-colors hover:bg-muted/40 min-w-0 overflow-hidden ${!isCurrentMonth ? "bg-muted/20 opacity-60" : ""}`}
+                className={`relative border-b border-r border-border p-0.5 sm:p-1.5 text-left min-w-0 overflow-hidden ${!isCurrentMonth ? "bg-muted/20 opacity-60" : ""}`}
               >
                 <span className={`inline-flex items-center justify-center size-5 sm:size-6 text-[10px] sm:text-xs font-medium rounded-full mb-0.5 sm:mb-1 ${isToday ? "bg-primary text-primary-foreground" : "text-foreground"}`}>
                   {date.getDate()}
@@ -286,9 +291,9 @@ function MonthView({ events, members, userId, onDelete, monthOffset, onDayClick 
                     const assigned = ids.map((id) => members.find((x) => x.id === id)).filter((x): x is Member => Boolean(x));
                     const color = assigned[0]?.avatar_color ?? "oklch(0.5 0.02 130)";
                     return (
-                      <div key={e.id} className="flex items-center gap-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium truncate" style={{ backgroundColor: `color-mix(in oklch, ${color} 12%, transparent)`, color, borderLeft: `2px solid ${color}` }}>
+                      <button key={e.id} onClick={() => onEventClick(e)} className="flex items-center gap-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium truncate text-left hover:brightness-110 transition" style={{ backgroundColor: `color-mix(in oklch, ${color} 12%, transparent)`, color, borderLeft: `2px solid ${color}` }}>
                         <span className="truncate">{e.title}</span>
-                      </div>
+                      </button>
                     );
                   })}
                   {dayEvents.length > 3 && (
@@ -301,21 +306,77 @@ function MonthView({ events, members, userId, onDelete, monthOffset, onDayClick 
                     const assigned = ids.map((id) => members.find((x) => x.id === id)).filter((x): x is Member => Boolean(x));
                     const color = assigned[0]?.avatar_color ?? "oklch(0.5 0.02 130)";
                     return (
-                      <div key={e.id} className="px-1 py-0.5 rounded text-[9px] leading-tight font-medium truncate" style={{ backgroundColor: `color-mix(in oklch, ${color} 14%, transparent)`, color, borderLeft: `2px solid ${color}` }}>
+                      <button key={e.id} onClick={() => onEventClick(e)} className="px-1 py-0.5 rounded text-[9px] leading-tight font-medium truncate text-left w-full hover:brightness-110 transition" style={{ backgroundColor: `color-mix(in oklch, ${color} 14%, transparent)`, color, borderLeft: `2px solid ${color}` }}>
                         {e.title}
-                      </div>
+                      </button>
                     );
                   })}
                   {dayEvents.length > 2 && (
                     <span className="text-[9px] text-muted-foreground pl-0.5">+{dayEvents.length - 2}</span>
                   )}
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
       ))}
     </div>
+  );
+}
+
+function EventDetailsDialog({ event, members, userId, onClose, onDelete }: {
+  event: Event | null;
+  members: Member[];
+  userId: string;
+  onClose: () => void;
+  onDelete: (id: string) => void | Promise<void>;
+}) {
+  if (!event) return null;
+  const ids = (event.member_ids && event.member_ids.length > 0) ? event.member_ids : (event.member_id ? [event.member_id] : []);
+  const assigned = ids.map((id) => members.find((x) => x.id === id)).filter((x): x is Member => Boolean(x));
+  const color = assigned[0]?.avatar_color ?? "oklch(0.5 0.02 130)";
+  const start = new Date(event.start_time);
+  const dateStr = `${SV_DAYS[(start.getDay() + 6) % 7]} ${start.getDate()} ${SV_MONTHS[start.getMonth()]} ${start.getFullYear()}`;
+  const timeStr = event.all_day ? "Heldag" : start.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
+  const canDelete = event.created_by === userId;
+  return (
+    <Dialog open={!!event} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="rounded-2xl w-[calc(100%-1.5rem)] max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-display text-xl flex items-center gap-2">
+            <span className="size-3 rounded-full shrink-0" style={{ backgroundColor: color }} />
+            <span className="break-words">{event.title}</span>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 pt-2 text-sm">
+          <div>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-1">När</div>
+            <div className="capitalize">{dateStr}</div>
+            <div className="font-mono" style={{ color }}>{timeStr}</div>
+          </div>
+          {assigned.length > 0 && (
+            <div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-1">För vem</div>
+              <div className="flex flex-wrap gap-1.5">
+                {assigned.map((m) => (
+                  <span key={m.id} className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: `color-mix(in oklch, ${m.avatar_color} 15%, transparent)`, color: m.avatar_color }}>
+                    {m.display_name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          {canDelete && (
+            <Button variant="ghost" onClick={() => onDelete(event.id)} className="text-destructive hover:text-destructive">
+              <Trash2 className="size-4 mr-1" /> Ta bort
+            </Button>
+          )}
+          <Button onClick={onClose}>Stäng</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
